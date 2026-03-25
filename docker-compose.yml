@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: orbit_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: orbit_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: 
+      context: ./orbit-api
+      dockerfile: Dockerfile
+    container_name: orbit_api
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://admin:adminpassword@db:5432/orbit_db?schema=public"
+    volumes:                     
+      - ./orbit-api:/app          
+      - /app/node_modules        
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: ./orbit-front
+      dockerfile: Dockerfile
+    container_name: orbit_front
+    restart: always
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
