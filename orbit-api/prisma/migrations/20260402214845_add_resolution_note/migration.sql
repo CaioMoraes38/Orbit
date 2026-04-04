@@ -36,6 +36,7 @@ CREATE TABLE "Ticket" (
     "description" TEXT NOT NULL,
     "status" "TicketStatus" NOT NULL DEFAULT 'OPEN',
     "priority" "Priority" NOT NULL DEFAULT 'LOW',
+    "resolutionNote" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "authorId" TEXT NOT NULL,

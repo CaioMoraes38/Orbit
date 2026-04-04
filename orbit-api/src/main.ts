@@ -12,9 +12,11 @@ async function bootstrap() {
     .setTitle('Orbit API')
     .setDescription('API do sistema de chamados Orbit')
     .setVersion('1.0')
+    .addBearerAuth() 
     .build();
+    
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
+  SwaggerModule.setup('api', app, document);
 
   await app.listen(3000);
 }

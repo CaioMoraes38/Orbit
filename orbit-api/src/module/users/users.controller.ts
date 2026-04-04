@@ -4,7 +4,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { FindAllUsersDto } from './dto/find-all-users.dto';
 import { UserEntity } from './entities/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
-import {JwtAuthGuard} from 'src/auth/jwt.guard'
 
 @Controller('users')
 @UseInterceptors(ClassSerializerInterceptor) 
@@ -17,7 +16,6 @@ export class UsersController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
   async findAll(@Query() query: FindAllUsersDto) {
     const result = await this.usersService.findAll(query);
     return {

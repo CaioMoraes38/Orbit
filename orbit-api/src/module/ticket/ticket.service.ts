@@ -1,26 +1,57 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common'; // Importe as exceções!
 import { CreateTicketDto } from './dto/create-ticket.dto';
 import { UpdateTicketDto } from './dto/update-ticket.dto';
+import { PrismaService } from 'src/prisma/prisma.service';
 
 @Injectable()
 export class TicketService {
-  create(createTicketDto: CreateTicketDto) {
-    return 'This action adds a new ticket';
+  constructor(private prisma: PrismaService) {}
+
+  async create(createTicketDto: CreateTicketDto, authorId: string) {
+    return this.prisma.ticket.create({
+      data: {
+        ...createTicketDto, 
+        authorId,           
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all ticket`;
+  async findAll() {
+    return this.prisma.ticket.findMany({
+      include: {
+        author: true,     
+        category: true,   
+        assignee: true,   
+      },
+      orderBy: { createdAt: 'desc' } 
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} ticket`;
+  async findOne(id: string) {
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id },
+      include: { author: true, category: true, assignee: true },
+    });
+
+    if (!ticket) {
+      throw new NotFoundException('Chamado não encontrado no sistema.'); // Erro 404 elegante
+    }
+    return ticket;
+  }
+  
+  async update(id: string, updateTicketDto: UpdateTicketDto) {
+    await this.findOne(id); 
+    return this.prisma.ticket.update({
+      where: { id },
+      data: updateTicketDto,
+    });
   }
 
-  update(id: number, updateTicketDto: UpdateTicketDto) {
-    return `This action updates a #${id} ticket`;
-  }
+  async delete(id: string) {
+    await this.findOne(id); 
 
-  remove(id: number) {
-    return `This action removes a #${id} ticket`;
+    return this.prisma.ticket.delete({
+      where: { id },
+    });
   }
 }

@@ -1,30 +1,36 @@
 import { Injectable, ConflictException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import {FindAllUsersDto} from './dto/find-all-users.dto'
+import { FindAllUsersDto } from './dto/find-all-users.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import * as bcrypt from 'bcrypt'; 
 
 @Injectable()
 export class UsersService {
+  constructor(private prisma: PrismaService){}
 
-  constructor(private  prisma: PrismaService){}
-
-  async create( createUserDto: CreateUserDto){
+  async create(createUserDto: CreateUserDto) {
     const userExist = await this.prisma.user.findUnique({
-      where:{
-        email:createUserDto.email
+      where: { email: createUserDto.email }
+    });
+    
+    if (userExist) {
+      throw new ConflictException('Email já cadastrado');
+    }
+
+    const { password, ...userData } = createUserDto;
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    return this.prisma.user.create({
+      data: {
+        ...userData,
+        password: hashedPassword, 
       }
     });
-    if(userExist){
-      throw new ConflictException('Email já cadastrado')
-    }
-    return this.prisma.user.create({
-      data:createUserDto
-    })
   }
 
   async findAll(query: FindAllUsersDto) {
-    
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const search = query.search;
@@ -60,8 +66,7 @@ export class UsersService {
     };
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto, requesterRole:string) { 
-    
+  async update(id: string, updateUserDto: UpdateUserDto, requesterRole: string) { 
     if (updateUserDto.role && requesterRole !== 'ADMIN') {
       throw new ForbiddenException('Acesso negado: Apenas Administradores podem alterar cargos.');
     }
@@ -73,6 +78,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException('Usuário não encontrado no sistema.');
     }
+    
     if (updateUserDto.email && updateUserDto.email !== user.email) {
       const emailInUse = await this.prisma.user.findUnique({
         where: { email: updateUserDto.email },
@@ -80,10 +86,16 @@ export class UsersService {
       if (emailInUse) {
         throw new ConflictException('Este e-mail já está sendo usado por outro usuário.');
       }
-    }    return this.prisma.user.update({
+    }
+
+    // Bônus Sênior: Se o usuário estiver atualizando a senha, precisamos hashear também!
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    return this.prisma.user.update({
       where: { id },
       data: updateUserDto,
     });
   }
-
 }
